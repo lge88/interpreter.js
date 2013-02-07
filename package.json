@@ -1,0 +1,22 @@
+{
+  "name": "interpreter.js",
+  "version": "0.0.0",
+  "description": "An command pattern framework for Node.js",
+  "main": "interpreter.js",
+  "scripts": {
+    "test": "node tests/all.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lge88/interpreter.js.git"
+  },
+  "keywords": [
+    "command",
+    "interpret",
+    "interpreter",
+    "undo"
+  ],
+  "author": "Li Ge",
+  "license": "BSD",
+  "readmeFilename": "README.md"
+}
