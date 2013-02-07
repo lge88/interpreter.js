@@ -1,0 +1,10 @@
+{
+  "name": "interpreter.js",
+  "repo": "https://github.com/lge88/interpreter.js.git",
+  "description": "A command pattern framework for Node.js",
+  "version": "0.1.0",
+  "keywords": ["command", "undo", "interpret", "interpreter"],
+  "scripts": [
+    "interpreter.js"
+  ]
+}
