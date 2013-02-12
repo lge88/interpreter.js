@@ -90,19 +90,18 @@ extend(undo.Stack.prototype, {
   }
 });
 
-undo.Command = function(name) {
-  this.name = name;
+undo.Command = function() {};
+// undo.Command = function(name) {
+//   this.name = name;
+// };
+
+var up = function(){
+  throw new Error("override me!");
 };
 
-var up = new Error("override me!");
-
 extend(undo.Command.prototype, {
-  execute: function() {
-	throw up;
-  },
-  undo: function() {
-	throw up;
-  },
+  execute : up,
+  undo : up,
   redo: function() {
 	this.execute();
   }
@@ -117,45 +116,36 @@ undo.Command.extend = function(protoProps) {
 var _ = require('lodash');
 var Events = require('backbone').Events;
 
-function interpreter() {
+function interpreter(context) {
   if (!(this instanceof interpreter)) {
-    return new interpreter();
+    return new interpreter(context);
   }
   _.extend(this, Events);
   
   this._stack = new undo.Stack();
   this._history = [];
   this._commands = {};
-  this._globals = {};
+  this._ctx = context || {};
 
   // create build-in commands:
-  this.addCommand({
-    name : 'undo',
-    execute : function() {
-      this._interp._undo();
-    }
-  });
+  this._addBuildInCommands();
   
   _.bindAll(this);
   return this;
 }
 
+interpreter.prototype._addBuildInCommands = function() {
+  
+};
+
 // A getter and setter for commands:
-interpreter.prototype.command = function(name, fun) {
-  if (arguments.length === 2 && _.isString(name) && _.isFunction(fun)) {
-    fun.name = name;
-    return this._commands[name] = fun;
-  } else if (arguments.length === 1 &&
-             _.isObject(name) &&
-             _.every(_.values(name), function(val) {
-               return _.isFunction(val);
-             })) {
-    _(_.values(name), function(val, key) {
-      val.name = key;
-    });
-    return _.extend(this._commands, name);
-  } else if (arguments.length === 1 && _.isString(name)) {
-    return this._commands[name];
+interpreter.prototype.command = function(arg) {
+  if (arguments.length === 1 && _.isString(arg)) {
+    return this._commands[arg];
+  } else if (arguments.length === 1 && _.isObject(arg)) {
+    return this.createCommand(arg);
+  } else if (arguments.length === 1 && _.isString(arg)) {
+    return this._commands[arg];
   } else {
     return false;
   }
@@ -170,9 +160,10 @@ interpreter.prototype.get = function(key) {
 };
 
 interpreter.prototype.createCommand = function(obj) {
+  obj._interp = this;
   var Cmd = undo.Command.extend(obj);
   if (_.isString(obj.name)) {
-    this.command(obj.name, Cmd);
+    this._commands[obj.name] = Cmd;
   }
   return Cmd;
 };
@@ -191,8 +182,7 @@ interpreter.prototype.reset = function() {
   return this;
 };
 
-
-interpreter.prototype.undo = function() {
+interpreter.prototype._undo = function() {
   if (this._stack.canUndo()) {
     var cmdName = this._stack.commands[this._stack.stackPosition].name;
     this._stack.undo();
@@ -202,7 +192,7 @@ interpreter.prototype.undo = function() {
   }
 };
 
-interpreter.prototype.redo = function() {
+interpreter.prototype._redo = function() {
   if (this._stack.canRedo()) {
     this._stack.redo();
     var cmdName = this._stack.commands[this._stack.stackPosition].name;
@@ -223,6 +213,7 @@ interpreter.prototype.execute = function(arr) {
   
   try {
     var str = JSON.stringify(arr);
+    this._history.push(str);
   } catch(e) {
     console.error('The argument of interpreter::execute must be a serializable array');
     return false;
@@ -230,19 +221,25 @@ interpreter.prototype.execute = function(arr) {
 
   var name = arr[0];
   if (name === 'undo'){
-    return this.undo();
+    return this._undo();
   } else if (name === 'redo'){
-    return this.redo();
+    return this._redo();
   } else {
     var Command = this.command(name);
     if (!_.isUndefined(Command) && _.isFunction(Command)) {
       var args = arr.slice(1);
-      return this._stack.execute(new Command(args));
+      var cmd = new Command(args);
+      if (cmd.undo !== up) {
+        return this._stack.execute(cmd);
+      } else {
+        return cmd.execute();
+      }
     } else {
       return false;
     }
   }
 };
+interpreter.prototype.exec = interpreter.prototype.execute;
 
 interpreter.prototype.parse = function(str) {
   if (!_.isString(str)) {
