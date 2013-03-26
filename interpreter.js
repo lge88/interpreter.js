@@ -172,7 +172,7 @@ Command.extend = function(protoProps) {
   return child;
 };
 
-var _ = require('lodash');
+var _ = require('underscore');
 
 function interpreter(context) {
   if (!(this instanceof interpreter)) {
