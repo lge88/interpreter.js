@@ -13,6 +13,7 @@
     "interpreter.js"
   ],
   "dependencies": {
-    "lodash": "~1.0.0-rc.3"
-  }
+    "lge88/underscore": "*"
+  },
+  "main": "interpreter.js"
 }
